@@ -1,0 +1,9 @@
+[package]
+name = "iassets"
+version = "1.0.0"
+
+[addresses]
+demo_addr = "0x1c5acf62be507c27a7788a661b546224d806246765ff2695efece60194c6df05"
+
+[dependencies]
+SupraFramework = { git = "https://github.com/Entropy-Foundation/aptos-core.git", subdir = "aptos-move/framework/supra-framework", rev = "dev" }
