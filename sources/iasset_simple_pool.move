@@ -1,33 +1,47 @@
-module demo_addr::iasset_pool {
+module demo_addr::iassets_pool {
     use std::signer;
-    use supra_framework::object::Object;
-    use supra_framework::fungible_asset::Metadata;
+    use supra_framework::object::{Self, Object, ExtendRef};
+    use supra_framework::fungible_asset::{Self, Metadata, FungibleStore, FungibleAsset};
+    use supra_framework::primary_fungible_store;
     
     const POEL_MODULE: address = @0xc4a734e5b84deb218ab7ba5a46af45da54d5ff4aa8846e842c3ac2e32ce0eebd;
     const E_POOL_NOT_FOUND: u64 = 1;
     const E_POSITION_NOT_FOUND: u64 = 2;
     const E_POOL_NOT_ACTIVE: u64 = 3;
     const E_ZERO_AMOUNT: u64 = 4;
+    const E_INSUFFICIENT_BALANCE: u64 = 5;
     
     struct SimplePool has key {
         total_iassets_deposited: u64,
         total_rewards_earned: u64,
         pool_active: bool,
+        iasset_store: Object<FungibleStore>,
+        iasset_store_extend_ref: ExtendRef,
+        iasset_metadata: Object<Metadata>,
     }
     
     struct LiquidityPosition has key {
         iasset_balance: u64,
         rewards_claimed: u64,
     }
-    
-    public entry fun create_pool(admin: &signer) {
+    public entry fun create_pool(
+        admin: &signer,
+        iasset_metadata: Object<Metadata>
+    ) {
+        let admin_addr = signer::address_of(admin);
+        let store_constructor_ref = &object::create_object(admin_addr);
+        let iasset_store = fungible_asset::create_store(store_constructor_ref, iasset_metadata);
+        let iasset_store_extend_ref = object::generate_extend_ref(store_constructor_ref);
+        
         move_to(admin, SimplePool {
             total_iassets_deposited: 0,
             total_rewards_earned: 0,
             pool_active: true,
+            iasset_store,
+            iasset_store_extend_ref,
+            iasset_metadata,
         });
     }
-    
     public entry fun deposit_iassets(
         user: &signer,
         amount: u64
@@ -37,6 +51,8 @@ module demo_addr::iasset_pool {
         assert!(exists<SimplePool>(@demo_addr), E_POOL_NOT_FOUND);
         let pool = borrow_global<SimplePool>(@demo_addr);
         assert!(pool.pool_active, E_POOL_NOT_ACTIVE);
+        let iasset = primary_fungible_store::withdraw(user, pool.iasset_metadata, amount);
+        fungible_asset::deposit(pool.iasset_store, iasset);
         
         if (!exists<LiquidityPosition>(user_addr)) {
             move_to(user, LiquidityPosition {
@@ -50,6 +66,28 @@ module demo_addr::iasset_pool {
         
         let position = borrow_global_mut<LiquidityPosition>(user_addr);
         position.iasset_balance = position.iasset_balance + amount;
+    }
+    
+    public entry fun withdraw_iassets(
+        user: &signer,
+        amount: u64
+    ) acquires SimplePool, LiquidityPosition {
+        let user_addr = signer::address_of(user);
+        assert!(exists<SimplePool>(@demo_addr), E_POOL_NOT_FOUND);
+        assert!(exists<LiquidityPosition>(user_addr), E_INSUFFICIENT_BALANCE);
+        
+        let user_position = borrow_global_mut<LiquidityPosition>(user_addr);
+        assert!(user_position.iasset_balance >= amount, E_INSUFFICIENT_BALANCE);
+        
+        let pool = borrow_global<SimplePool>(@demo_addr);
+        let store_signer = &object::generate_signer_for_extending(&pool.iasset_store_extend_ref);
+        let iasset = fungible_asset::withdraw(store_signer, pool.iasset_store, amount);
+        primary_fungible_store::deposit(user_addr, iasset);
+        
+        let pool_mut = borrow_global_mut<SimplePool>(@demo_addr);
+        pool_mut.total_iassets_deposited = pool_mut.total_iassets_deposited - amount;
+        
+        user_position.iasset_balance = user_position.iasset_balance - amount;
     }
     
     public entry fun step1_update_rewards(
@@ -94,7 +132,7 @@ module demo_addr::iasset_pool {
         
         user_position.rewards_claimed = user_position.rewards_claimed + user_share;
     }
-
+    
     #[view]
     public fun get_pool_stats(): (u64, u64, bool) acquires SimplePool {
         if (!exists<SimplePool>(@demo_addr)) {
@@ -116,7 +154,7 @@ module demo_addr::iasset_pool {
         };
         borrow_global<SimplePool>(@demo_addr).pool_active
     }
-
+    
     #[view]
     public fun get_user_position(user: address): (u64, u64) acquires LiquidityPosition {
         if (!exists<LiquidityPosition>(user)) {
@@ -135,7 +173,6 @@ module demo_addr::iasset_pool {
         exists<LiquidityPosition>(user)
     }
     
-
     #[view]
     public fun get_user_pool_share(user: address): u64 acquires SimplePool, LiquidityPosition {
         if (!exists<SimplePool>(@demo_addr) || !exists<LiquidityPosition>(user)) {
@@ -234,5 +271,14 @@ module demo_addr::iasset_pool {
             pool_share,
             estimated_reward
         )
+    }
+    #[view]
+    public fun get_pool_iasset_balance(): u64 acquires SimplePool {
+        if (!exists<SimplePool>(@demo_addr)) {
+            return 0
+        };
+        
+        let pool = borrow_global<SimplePool>(@demo_addr);
+        fungible_asset::balance(pool.iasset_store)
     }
 }
