@@ -58,7 +58,7 @@ Proof of Efficient Liquidity (PoEL):
 ```
 iassets/
 ├── sources/
-│   └── iassets_pool.move        # Main pool contract (holds iAssets)
+│   └── iassets_simple_pool.move        # Main pool contract (holds iAssets)
 ├── Move.toml                    # Package config
 └── README.md                    # This file
 ```
@@ -69,20 +69,20 @@ iassets/
 
 ```bash
 supra move Tool run \
-  --function-id 'YOUR_ADDRESS::iassets_pool::create_pool' \
+  --function-id 'YOUR_ADDRESS::iassets_poel_demo_j::create_pool' \
   --args object:IASSET_METADATA_ADDRESS
 ```
 
 ### 2. Users Deposit iAssets
 
 ```bash
-supra move Tool run --function-id 'YOUR_ADDRESS::iassets_pool::deposit_iassets' --args u64:AMOUNT
+supra move Tool run --function-id 'YOUR_ADDRESS::iassets_poel_demo_j::deposit_iassets' --args u64:AMOUNT
 ```
 
 ### 3. Check Pool Stats
 
 ```bash
-supra move Tool view --function-id 'YOUR_ADDRESS::iassets_pool::get_pool_stats
+supra move Tool view --function-id 'YOUR_ADDRESS::iassets_poel_demo_j::get_pool_stats
 ```
 
 **Returns:** `(total_iassets_deposited, total_rewards_earned, pool_active)`
@@ -90,7 +90,7 @@ supra move Tool view --function-id 'YOUR_ADDRESS::iassets_pool::get_pool_stats
 ### 4. Check User Position
 
 ```bash
-supra move Tool view --function-id 'YOUR_ADDRESS::iassets_pool::get_user_position' --args address:USER_ADDRESS
+supra move Tool view --function-id 'YOUR_ADDRESS::iassets_poel_demo_j::get_user_position' --args address:USER_ADDRESS
 ```
 
 **Returns:** `(iasset_balance, rewards_claimed)`
@@ -98,7 +98,7 @@ supra move Tool view --function-id 'YOUR_ADDRESS::iassets_pool::get_user_positio
 ### 5. Verify Pool Balance On-Chain
 
 ```bash
-supra move Tool view --function-id 'YOUR_ADDRESS::iassets_pool::get_pool_iasset_balance'
+supra move Tool view --function-id 'YOUR_ADDRESS::iassets_poel_demo_j::get_pool_iasset_balance'
 ```
 
 ## PoEL Reward Integration (The Important Part!)
@@ -185,26 +185,26 @@ Calculate each user's share and send SUPRA directly.
 ### Get Complete Pool Info
 ```bash
 supra move Tool view \
-  --function-id 'YOUR_ADDRESS::iassets_pool::get_pool_stats'
+  --function-id 'YOUR_ADDRESS::iassets_poel_demo_j::get_pool_stats'
 ```
 
 ### Get User's Position
 ```bash
 supra move Tool view \
-  --function-id 'YOUR_ADDRESS::iassets_pool::get_user_position' \
+  --function-id 'YOUR_ADDRESS::iassets_poel_demo_j::get_user_position' \
   --args address:USER_ADDRESS
 ```
 
 ### Get Pool's Actual iAsset Balance
 ```bash
 supra move Tool view \
-  --function-id 'YOUR_ADDRESS::iassets_pool::get_pool_iasset_balance'
+  --function-id 'YOUR_ADDRESS::iassets_poel_demo_j::get_pool_iasset_balance'
 ```
 
 ### Get Reward Timestamps
 ```bash
 supra move Tool view \
-  --function-id 'YOUR_ADDRESS::iassets_pool::get_reward_timestamps'
+  --function-id 'YOUR_ADDRESS::iassets_poel_demo_j::get_reward_timestamps'
 ```
 
 **Returns:** `(last_update_timestamp, last_claim_timestamp, last_withdraw_timestamp)`
@@ -222,12 +222,12 @@ supra move Tool publish
 
 # 2. Create pool for iUSDC
 supra move Tool run \
-  --function-id '0xYOUR_ADDR::iassets_pool::create_pool' \
+  --function-id '0xYOUR_ADDR::iassets_poel_demo_j::create_pool' \
   --args object:0x7762f3583728573ad0e02367ba06d35fdd75bc6bac5985038d24f1fa4b3f661c
 
 # 3. Deposit some iUSDC
 supra move Tool run \
-  --function-id '0xYOUR_ADDR::iassets_pool::deposit_iassets' \
+  --function-id '0xYOUR_ADDR::iassets_poel_demo_j::deposit_iassets' \
   --args u64:100000
 ```
 
@@ -271,7 +271,7 @@ supra move Tool run \
 
 Make sure you've created the pool first:
 ```bash
-supra move Tool run --function-id 'YOUR_ADDRESS::iassets_pool::create_pool' --args object:IASSET_METADATA
+supra move Tool run --function-id 'YOUR_ADDRESS::iassets_poel_demo_j::create_pool' --args object:IASSET_METADATA
 ```
 
 ### "Position not found" error
